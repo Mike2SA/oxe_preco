@@ -18,12 +18,15 @@ const sequelize = new Sequelize(
   }
 );
 
-// Hook global para transformar todas as strings em caixa alta (uppercase) antes de salvar no banco
+// Hook global para transformar certas strings em caixa alta (uppercase) antes de salvar no banco
 sequelize.addHook('beforeValidate', (instance) => {
   if (instance && instance.dataValues) {
     for (const key of Object.keys(instance.dataValues)) {
       if (typeof instance.dataValues[key] === 'string') {
-        instance.dataValues[key] = instance.dataValues[key].toUpperCase();
+        // Exclui campos sensíveis que quebram com uppercase
+        if (key !== 'email' && key !== 'senha_hash' && key !== 'senha') {
+          instance.dataValues[key] = instance.dataValues[key].toUpperCase();
+        }
       }
     }
   }

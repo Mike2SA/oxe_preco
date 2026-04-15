@@ -9,11 +9,12 @@ const SECRET_KEY = process.env.JWT_SECRET || 'super_secret_key_oxe_preco';
 
 router.post('/register', async (req, res) => {
     try {
-        const { nome, email, senha } = req.body;
+        let { nome, email, senha } = req.body;
         
         if (!nome || !email || !senha) {
             return res.status(400).json({ erro: 'Nome, email e senha são obrigatórios' });
         }
+        email = email.trim();
 
         const usuarioExistente = await Usuario.findOne({ where: { email } });
         if (usuarioExistente) {
@@ -42,11 +43,12 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     try {
-        const { email, senha } = req.body;
+        let { email, senha } = req.body;
 
         if (!email || !senha) {
             return res.status(400).json({ erro: 'Email e senha são obrigatórios' });
         }
+        email = email.trim();
 
         const usuario = await Usuario.findOne({ where: { email } });
         if (!usuario) {
