@@ -15,6 +15,7 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ erro: 'Nome, email e senha são obrigatórios' });
         }
         email = email.trim();
+        senha = senha.trim();
 
         const usuarioExistente = await Usuario.findOne({ where: { email } });
         if (usuarioExistente) {
@@ -49,6 +50,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ erro: 'Email e senha são obrigatórios' });
         }
         email = email.trim();
+        senha = senha.trim();
 
         const usuario = await Usuario.findOne({ where: { email } });
         if (!usuario) {

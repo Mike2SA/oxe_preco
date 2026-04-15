@@ -22,10 +22,15 @@ const sequelize = new Sequelize(
 sequelize.addHook('beforeValidate', (instance) => {
   if (instance && instance.dataValues) {
     for (const key of Object.keys(instance.dataValues)) {
-      if (typeof instance.dataValues[key] === 'string') {
-        // Exclui campos sensíveis que quebram com uppercase
-        if (key !== 'email' && key !== 'senha_hash' && key !== 'senha') {
-          instance.dataValues[key] = instance.dataValues[key].toUpperCase();
+      const value = instance.dataValues[key];
+      if (typeof value === 'string') {
+        const shouldSkip = (key === 'email' || key === 'senha_hash' || key === 'senha' || key === 'token');
+        
+        if (!shouldSkip) {
+          instance.dataValues[key] = value.toUpperCase();
+        } else {
+          // Log para confirmar que estamos pulando
+          console.log(`[Sequelize Hook] Poupando campo: ${key} (valor: ${value.substring(0, 10)}...)`);
         }
       }
     }
