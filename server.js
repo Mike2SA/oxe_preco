@@ -213,6 +213,24 @@ app.get('/api/compras', async (req, res) => {
     }
 });
 
+app.get('/api/compras/:id/itens', async (req, res) => {
+    try {
+        const itens = await ItemComprado.findAll({
+            where: { compra_id: req.params.id },
+            include: [
+                { 
+                    model: Variacao, 
+                    include: [Produto] 
+                }
+            ]
+        });
+        res.json(itens);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({erro: e.message});
+    }
+});
+
 app.get('/api/produtos/recentes', async (req, res) => {
     try {
         const itens = await ItemComprado.findAll({
