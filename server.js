@@ -1,9 +1,11 @@
 const express = require('express');
 const http = require('http');
 const puppeteer = require('puppeteer');
+const cors = require('cors');
 const { parse } = require('node-html-parser');
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const authRoutes = require('./routes/auth');

@@ -14,7 +14,7 @@ const sequelize = new Sequelize(
         trustServerCertificate: true, // Change to true for local dev / self-signed certs
       },
     },
-    logging: false,
+    logging: console.log,
   }
 );
 
