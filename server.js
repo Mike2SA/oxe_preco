@@ -9,6 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 const authRoutes = require('./routes/auth');
+const authMiddleware = require('./middlewares/auth');
 app.use('/api/auth', authRoutes);
 
 // ─── Setup e Teste de Banco ───────────────────────────────────────────────────
@@ -130,30 +131,64 @@ function parseSefazHtml(html) {
 
 // ─── Rota ─────────────────────────────────────────────────────────────────────
 
-app.post('/consultar-nfce', async (req, res) => {
+let globalBrowser = null;
+
+async function getBrowserInstance() {
+    if (globalBrowser && globalBrowser.connected) {
+        return globalBrowser;
+    }
+
+    console.log('🚀 Inicializando instância global do Puppeteer...');
+    globalBrowser = await puppeteer.launch({
+        headless: 'new',
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--ignore-certificate-errors',
+            '--disable-web-security',
+            '--disable-extensions',
+            '--allow-running-insecure-content',
+            '--disable-features=BlockInsecurePrivateNetworkRequests',
+            '--unsafely-treat-insecure-origin-as-secure=http://nfe.sefaz.ba.gov.br',
+        ],
+        ignoreHTTPSErrors: true,
+    });
+
+    globalBrowser.on('disconnected', () => {
+        console.log('⚠️ Puppeteer desconectado, limpando referência.');
+        globalBrowser = null;
+    });
+
+    return globalBrowser;
+}
+
+async function closeGlobalBrowser() {
+    if (globalBrowser) {
+        console.log('🛑 Fechando instância global do Puppeteer...');
+        await globalBrowser.close();
+        globalBrowser = null;
+    }
+}
+
+process.on('SIGINT', async () => {
+    await closeGlobalBrowser();
+    process.exit(0);
+});
+process.on('SIGTERM', async () => {
+    await closeGlobalBrowser();
+    process.exit(0);
+});
+
+app.post('/consultar-nfce', authMiddleware, async (req, res) => {
     const { url } = req.body;
     if (!url) return res.status(400).json({ erro: 'URL não informada' });
 
     console.log('Consultando:', url);
 
-    let browser;
+    let page;
     try {
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--ignore-certificate-errors',
-                '--disable-web-security',
-                '--disable-extensions',
-                '--allow-running-insecure-content',
-                '--disable-features=BlockInsecurePrivateNetworkRequests',
-                '--unsafely-treat-insecure-origin-as-secure=http://nfe.sefaz.ba.gov.br',
-            ],
-            ignoreHTTPSErrors: true,
-        });
-
-        const page = await browser.newPage();
+        const browser = await getBrowserInstance();
+        page = await browser.newPage();
 
         await page.setUserAgent(
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -181,8 +216,7 @@ app.post('/consultar-nfce', async (req, res) => {
         // Tenta persistir os dados da NF no banco de dados (SQL Server) via Sequelize
         try {
             const processNfceService = require('./services/ProcessNfceService');
-            // Nota: Você pode obter o userId do req.body.userId caso seu app envie
-            const dbResult = await processNfceService.process(resultado, req.body.userId || null);
+            const dbResult = await processNfceService.process(resultado, req.userId || null);
             console.log('Persistência no DB finalizada:', dbResult);
         } catch (dbError) {
             console.error('Erro na persistência do DB (Ignorando para não quebrar o endpoint):', dbError);
@@ -194,16 +228,23 @@ app.post('/consultar-nfce', async (req, res) => {
         console.error('Erro:', e.message);
         res.status(500).json({ erro: e.message });
     } finally {
-        if (browser) await browser.close();
+        if (page) {
+            try {
+                await page.close();
+            } catch (err) {
+                console.error('Erro ao fechar página do Puppeteer:', err.message);
+            }
+        }
     }
 });
 
 // ─── API Endpoint para App Mobile ─────────────────────────────────────────────
 const { Compra, Mercado, ItemComprado, Variacao, Produto } = require('./models');
 
-app.get('/api/compras', async (req, res) => {
+app.get('/api/compras', authMiddleware, async (req, res) => {
     try {
         const compras = await Compra.findAll({
+            where: { user_id: req.userId },
             include: [ { model: Mercado, required: false } ],
             order: [['data_compra', 'DESC'], ['created_at', 'DESC']],
             limit: 50
@@ -215,7 +256,7 @@ app.get('/api/compras', async (req, res) => {
     }
 });
 
-app.get('/api/compras/:id/itens', async (req, res) => {
+app.get('/api/compras/:id/itens', authMiddleware, async (req, res) => {
     try {
         const itens = await ItemComprado.findAll({
             where: { compra_id: req.params.id },
@@ -223,6 +264,12 @@ app.get('/api/compras/:id/itens', async (req, res) => {
                 { 
                     model: Variacao, 
                     include: [Produto] 
+                },
+                {
+                    model: Compra,
+                    where: { user_id: req.userId },
+                    required: true,
+                    attributes: []
                 }
             ]
         });
@@ -233,11 +280,17 @@ app.get('/api/compras/:id/itens', async (req, res) => {
     }
 });
 
-app.get('/api/produtos/recentes', async (req, res) => {
+app.get('/api/produtos/recentes', authMiddleware, async (req, res) => {
     try {
         const itens = await ItemComprado.findAll({
             include: [
-                { model: Variacao, include: [Produto] }
+                { model: Variacao, include: [Produto] },
+                {
+                    model: Compra,
+                    where: { user_id: req.userId },
+                    required: true,
+                    attributes: []
+                }
             ],
             order: [['created_at', 'DESC']],
             limit: 10
@@ -249,7 +302,7 @@ app.get('/api/produtos/recentes', async (req, res) => {
     }
 });
 
-app.get('/api/produtos', async (req, res) => {
+app.get('/api/produtos', authMiddleware, async (req, res) => {
     try {
         const produtos = await Produto.findAll({
             order: [['nome_base', 'ASC']]
@@ -260,7 +313,7 @@ app.get('/api/produtos', async (req, res) => {
     }
 });
 
-app.get('/api/compras/itens-base', async (req, res) => {
+app.get('/api/compras/itens-base', authMiddleware, async (req, res) => {
     const { ids } = req.query;
     if (!ids) return res.json([]);
     
@@ -268,11 +321,19 @@ app.get('/api/compras/itens-base', async (req, res) => {
         const purchaseIds = ids.split(',');
         const items = await ItemComprado.findAll({
             where: { compra_id: purchaseIds },
-            include: [{ 
-                model: Variacao, 
-                attributes: ['produto_id'],
-                required: true 
-            }],
+            include: [
+                { 
+                    model: Variacao, 
+                    attributes: ['produto_id'],
+                    required: true 
+                },
+                {
+                    model: Compra,
+                    where: { user_id: req.userId },
+                    required: true,
+                    attributes: []
+                }
+            ],
             attributes: ['id']
         });
         
@@ -284,7 +345,7 @@ app.get('/api/compras/itens-base', async (req, res) => {
     }
 });
 
-app.get('/api/produtos/melhores-precos-agrupados', async (req, res) => {
+app.get('/api/produtos/melhores-precos-agrupados', authMiddleware, async (req, res) => {
     const { produtoIds } = req.query;
     if (!produtoIds) return res.json({});
     
