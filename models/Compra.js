@@ -8,7 +8,7 @@ const Compra = sequelize.define('Compra', {
     defaultValue: Sequelize.UUIDV4
   },
   user_id: {
-    type: DataTypes.UUID,
+    type: DataTypes.INTEGER,
     allowNull: true
   },
   chave_nfce: {
