@@ -4,8 +4,8 @@ const sequelize = require('../database');
 const Usuario = sequelize.define('Usuario', {
   id: {
     type: DataTypes.INTEGER,
-    autoIncrement: true,
     primaryKey: true,
+    autoIncrement: true
   },
   nome: {
     type: DataTypes.STRING(255),

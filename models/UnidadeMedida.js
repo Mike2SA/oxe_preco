@@ -1,11 +1,11 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Sequelize } = require('sequelize');
 const sequelize = require('../database');
 
 const UnidadeMedida = sequelize.define('UnidadeMedida', {
   id: {
-    type: DataTypes.TINYINT,
+    type: DataTypes.UUID,
     primaryKey: true,
-    autoIncrement: true,
+    defaultValue: Sequelize.UUIDV4
   },
   sigla: {
     type: DataTypes.CHAR(2),

@@ -29,7 +29,7 @@ const Compra = sequelize.define('Compra', {
     allowNull: false
   },
   unidade_medida_id: {
-    type: DataTypes.TINYINT,
+    type: DataTypes.UUID,
     allowNull: false
   },
   status: {
