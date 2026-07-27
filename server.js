@@ -213,13 +213,29 @@ app.post('/consultar-nfce', authMiddleware, async (req, res) => {
         const resultado = parseSefazHtml(html);
         console.log('Resultado:', JSON.stringify(resultado, null, 2));
 
+        if (!resultado.itens || resultado.itens.length === 0) {
+            return res.status(422).json({
+                erro: 'Não foi possível obter as informações da Nota Fiscal.',
+                detalhe: 'Nenhum item foi encontrado no link do QR Code.'
+            });
+        }
+
         // Tenta persistir os dados da NF no banco de dados (SQL Server) via Sequelize
+        let dbResult = null;
         try {
             const processNfceService = require('./services/ProcessNfceService');
-            const dbResult = await processNfceService.process(resultado, req.userId || null);
+            dbResult = await processNfceService.process(resultado, req.userId || null);
             console.log('Persistência no DB finalizada:', dbResult);
         } catch (dbError) {
             console.error('Erro na persistência do DB (Ignorando para não quebrar o endpoint):', dbError);
+        }
+
+        if (dbResult && dbResult.success === false && dbResult.message === 'Nota Fiscal já processada.') {
+            return res.status(409).json({
+                erro: 'Nota Fiscal já processada.',
+                duplicada: true,
+                compraId: dbResult.compraId
+            });
         }
 
         res.status(200).json(resultado);
