@@ -20,7 +20,7 @@ const Variacao = sequelize.define('Variacao', {
     allowNull: false
   },
   unidade_medida_id: {
-    type: DataTypes.UUID,
+    type: DataTypes.TINYINT,
     allowNull: false
   },
   tipo: {

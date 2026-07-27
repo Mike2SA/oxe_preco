@@ -8,7 +8,7 @@ const Compra = sequelize.define('Compra', {
     defaultValue: Sequelize.UUIDV4
   },
   user_id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     allowNull: true
   },
   chave_nfce: {
@@ -29,7 +29,7 @@ const Compra = sequelize.define('Compra', {
     allowNull: false
   },
   unidade_medida_id: {
-    type: DataTypes.UUID,
+    type: DataTypes.TINYINT,
     allowNull: false
   },
   status: {

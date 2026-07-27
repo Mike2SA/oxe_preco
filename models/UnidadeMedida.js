@@ -3,9 +3,9 @@ const sequelize = require('../database');
 
 const UnidadeMedida = sequelize.define('UnidadeMedida', {
   id: {
-    type: DataTypes.UUID,
+    type: DataTypes.TINYINT,
     primaryKey: true,
-    defaultValue: Sequelize.UUIDV4
+    autoIncrement: true
   },
   sigla: {
     type: DataTypes.CHAR(2),
