@@ -1,2 +1,8 @@
 node_modules/
 .env
+
+# rascunhos de debug temporarios (nao versionar)
+test_api.js
+test_inline.js
+test_inline2.js
+test_quick.js
