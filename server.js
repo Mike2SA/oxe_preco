@@ -9,8 +9,24 @@ app.use(cors());
 app.use(express.json());
 
 const authRoutes = require('./routes/auth');
+const priceHistoryRoutes = require('./routes/priceHistory');
+const optimizationRoutes = require('./routes/optimization');
+const reportsRoutes = require('./routes/reports');
+const watchlistRoutes = require('./routes/watchlist');
+const catalogoRoutes = require('./routes/catalogo');
+const comunidadeRoutes = require('./routes/comunidade');
+const listsRoutes = require('./routes/lists');
+const mercadosRoutes = require('./routes/mercados');
 const authMiddleware = require('./middlewares/auth');
 app.use('/api/auth', authRoutes);
+app.use('/api/produtos', priceHistoryRoutes);
+app.use('/api', optimizationRoutes);
+app.use('/api', reportsRoutes);
+app.use('/api', watchlistRoutes);
+app.use('/api', catalogoRoutes);
+app.use('/api/comunidade', comunidadeRoutes);
+app.use('/api', listsRoutes);
+app.use('/api', mercadosRoutes);
 
 // ─── Setup e Teste de Banco ───────────────────────────────────────────────────
 require('dotenv').config();
@@ -320,7 +336,14 @@ app.get('/api/produtos/recentes', authMiddleware, async (req, res) => {
 
 app.get('/api/produtos', authMiddleware, async (req, res) => {
     try {
+        const { q } = req.query;
+        const where = {};
+        if (q && q !== '') {
+            const { Op } = require('sequelize');
+            where.nome_base = { [Op.iLike]: `%${q}%` };
+        }
         const produtos = await Produto.findAll({
+            where,
             order: [['nome_base', 'ASC']]
         });
         res.json(produtos);

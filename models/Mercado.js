@@ -27,6 +27,22 @@ const Mercado = sequelize.define('Mercado', {
     type: DataTypes.DECIMAL(11, 8),
     allowNull: true
   },
+  lat: {
+    type: DataTypes.DECIMAL(10, 6),
+    allowNull: true
+  },
+  lng: {
+    type: DataTypes.DECIMAL(10, 6),
+    allowNull: true
+  },
+  endereco: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  cidade: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: Sequelize.literal('getutcdate()')

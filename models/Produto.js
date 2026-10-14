@@ -15,6 +15,14 @@ const Produto = sequelize.define('Produto', {
     type: DataTypes.STRING(100),
     allowNull: true
   },
+  categoriaId: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  eans: {
+    type: DataTypes.JSON,
+    allowNull: true
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: Sequelize.literal('getutcdate()')

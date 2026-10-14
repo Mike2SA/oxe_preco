@@ -6,6 +6,9 @@ const Produto = require('./Produto');
 const Variacao = require('./Variacao');
 const UnidadeMedida = require('./UnidadeMedida');
 const Usuario = require('./Usuario');
+const Watcher = require('./Watcher');
+const Alerta = require('./Alerta');
+const Dispositivo = require('./Dispositivo');
 
 // Associations
 Mercado.hasMany(Compra, { foreignKey: 'mercado_id' });
@@ -34,5 +37,8 @@ module.exports = {
   Produto,
   Variacao,
   UnidadeMedida,
-  Usuario
+  Usuario,
+  Watcher,
+  Alerta,
+  Dispositivo
 };
